@@ -569,6 +569,7 @@ webgl: {
 const { id, wsUrl } = await sdk.launch({
   instanceId: 'my-instance', // 可选，不提供则自动生成
   fingerprintConfig: fingerprint.config,
+  useSystemProxy: false, // 可选，默认 false，不读取本机系统代理
 });
 ```
 
@@ -600,6 +601,19 @@ await sdk.close('instance-id');
 ## 🔧 高级用法
 
 ### 代理配置
+
+SDK 默认不会读取或使用本机系统代理。业务方在 `createFingerprint` 中传入的 `proxy` 会直接作为浏览器实例的一级代理下发给内核。
+
+如果确实需要让某个实例读取本机系统代理，可以在启动实例时显式传 `useSystemProxy: true`：
+
+```javascript
+const instance = await sdk.launch({
+  fingerprintConfig: fingerprint.config,
+  useSystemProxy: true,
+});
+```
+
+开启 `useSystemProxy` 后，如果同时配置了业务代理，SDK 会将本机系统代理作为一级代理，将业务代理作为二级代理传给内核。未开启时，即使本机存在系统代理，也不会生成系统代理相关的 `--proxy-server` 参数。
 
 ```javascript
 // HTTP代理
