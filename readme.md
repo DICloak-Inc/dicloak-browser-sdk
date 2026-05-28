@@ -37,7 +37,6 @@ async function main() {
     key: 'Your usage sdk key', // sdk key 必须
     baseDir: path.join(__dirname, 'data'),
     sourceDataDir: path.join(__dirname, 'source-data'), // 内核源数据模板路径
-    chromiumPath: '/path/to/chromium.exe', // 指定浏览器内核路径
     logLevel: 'info',
   });
 
@@ -62,6 +61,7 @@ async function main() {
   const { id, wsUrl } = await sdk.launch({
     instanceId: instanceId,
     fingerprintConfig: fingerprintConfig.config,
+    chromiumPath: '/path/to/chromium.exe', // 本次启动使用的浏览器内核路径，必填
   });
 
   console.log(`浏览器启动成功: ${id}`);
@@ -86,10 +86,12 @@ await sdk.initialize({
   key: 'Your usage sdk key', // 必填
   baseDir: './browser-data', // 数据目录
   sourceDataDir: './source-data', // 内核源数据模板路径，必填
-  chromiumPath: '/path/to/browser', // 浏览器路径
+  chromiumPath: '/path/to/browser', // 可选，历史兼容字段；实际启动请在 launch 中传
   logLevel: 'info', // 日志级别
 });
 ```
+
+> 推荐在每次 `launch` 时显式传入 `chromiumPath`。初始化阶段的 `chromiumPath` 仅作为历史兼容配置保留，不作为多内核场景下的启动依据。
 
 ### 2. 指纹配置
 
@@ -569,9 +571,12 @@ webgl: {
 const { id, wsUrl } = await sdk.launch({
   instanceId: 'my-instance', // 可选，不提供则自动生成
   fingerprintConfig: fingerprint.config,
+  chromiumPath: '/path/to/browser', // 必填，本次启动使用的浏览器内核路径
   useSystemProxy: false, // 可选，默认 false，不读取本机系统代理
 });
 ```
+
+`chromiumPath` 必须在每次启动实例时显式传入。这样可以避免多个环境混用不同内核版本时，某次启动误用其他环境的内核路径。
 
 #### 实例状态查询
 
@@ -609,6 +614,7 @@ SDK 默认不会读取或使用本机系统代理。业务方在 `createFingerpr
 ```javascript
 const instance = await sdk.launch({
   fingerprintConfig: fingerprint.config,
+  chromiumPath: '/path/to/browser',
   useSystemProxy: true,
 });
 ```
@@ -664,6 +670,7 @@ for (let i = 0; i < 5; i++) {
 
   const instance = await sdk.launch({
     fingerprintConfig: fingerprint.config,
+    chromiumPath: '/path/to/browser',
   });
 
   instances.push(instance);
@@ -688,6 +695,7 @@ await sdk.setStandardCookies(instanceId, cookies);
 
 - 实例必须为关闭状态时操作。
 - 当前 SDK 支持多个内核版本（如 134 / 142 / 143）。跨内核版本迁移时，Cookie 存在兼容风险。
+- SDK 会在启动前根据本次 `launch.chromiumPath` 识别目标内核版本，并自动检查 Cookie DB 表结构；不兼容时会替换为对应版本的空模板，再写入业务侧通过 SDK 暂存的 Cookie。
 - 对业务侧来说，这意味着旧版本内核下生成的本地 Cookie，在切换到新版本内核后，不建议默认认为一定还能原样延续。
 
 ## 🛠️ 你需要准备
