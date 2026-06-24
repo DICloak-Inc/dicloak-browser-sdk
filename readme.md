@@ -358,6 +358,8 @@ export interface FingerprintConfig {
   };
   /** 密码提示 */
   passwordHint?: boolean;
+  /** 禁止查看网站密码，开启后会关闭保存密码提示和密码管理器 */
+  disablePasswordView?: boolean;
   /** WebGL配置 */
   webgl?: {
     type: 'custom' | 'truth';
@@ -465,6 +467,7 @@ const fingerprint = await sdk.createFingerprint({
       type: 'custom',
       value: { width: '1920', height: '1080' },
     },
+    disablePasswordView: true, // 禁止查看网站密码
     platformVersion: '15.0.0',
   },
   advancedConfig: {
@@ -488,6 +491,31 @@ const fingerprint = await sdk.createFingerprint({
 - 建议 `chromiumPath` 对应的内核版本与 `userAgent` 中的 Chrome 主版本尽量保持一致。
 - 建议 `userAgent`、目标系统、`platformVersion` 三者保持一致，否则业务站点可能识别出环境不一致。
 - iOS 场景通常重点是传正确的 UA；`platformVersion` 主要用于配合 Client Hint 场景。
+
+#### 禁止查看网站密码
+
+业务方可以通过 `fingerprint.disablePasswordView` 控制是否禁止用户在网站密码相关界面查看密码。
+
+- 默认不禁止，等同于 `disablePasswordView: false`
+- 开启 `disablePasswordView: true` 后，保存密码提示和密码查看 / 密码管理入口都会被关闭，SDK 会把以下参数写入加密后的 `launchKey`：
+  - `password.hint = "0"`
+  - `pwmanager.enable = "0"`
+- 关闭或默认状态下，密码查看 / 密码管理入口保持开启，SDK 会把 `pwmanager.enable = "1"` 写入加密后的 `launchKey`
+- 默认保存密码提示开启，SDK 会把 `password.hint = "1"` 写入加密后的 `launchKey`
+- 旧字段 `fingerprint.passwordHint` 仍然兼容，只控制保存密码提示：
+  - `passwordHint: false` 会下发 `password.hint = "0"`，但不会关闭 `pwmanager.enable`
+  - 如果同时传 `disablePasswordView: true`，保存密码提示和密码查看 / 密码管理入口都会关闭
+
+示例：
+
+```javascript
+const fingerprint = await sdk.createFingerprint({
+  userAgent: 'Mozilla/5.0 ...',
+  fingerprint: {
+    disablePasswordView: true,
+  },
+});
+```
 
 #### WebRTC 使用说明
 
