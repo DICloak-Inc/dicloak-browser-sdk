@@ -243,9 +243,16 @@ export interface ProxyProps {
 export interface AdvancedConfig {
   /** 是否恢复上次会话 */
   restoreLast?: 'enable' | 'disable';
+  /** 浏览器安全能力配置 */
+  security?: {
+    /** 禁止管理/移除扩展，以及禁止从本地安装扩展到浏览器 */
+    disableExtensionManagement?: boolean;
+    /** 禁止访问谷歌扩展商店和扩展设置页面 */
+    blockExtensionStoreAndSettings?: boolean;
+  };
   /** URL过滤配置 */
   urls?: {
-    black?: string; // 黑名单
+    black?: string; // base64 后的黑名单文件路径
     white?: string; // 白名单
     kyc?: string; // KYC名单
   };
@@ -467,11 +474,14 @@ const fingerprint = await sdk.createFingerprint({
       type: 'custom',
       value: { width: '1920', height: '1080' },
     },
-    disablePasswordView: true, // 禁止查看网站密码
     platformVersion: '15.0.0',
   },
   advancedConfig: {
     restoreLast: 'enable', // 恢复上次会话
+    security: {
+      disableExtensionManagement: true, // 禁止管理/移除扩展，以及禁止从本地安装扩展
+      blockExtensionStoreAndSettings: true, // 禁止访问谷歌扩展商店和扩展设置页面
+    },
   },
   accounts: [
     {
@@ -513,6 +523,45 @@ const fingerprint = await sdk.createFingerprint({
   userAgent: 'Mozilla/5.0 ...',
   fingerprint: {
     disablePasswordView: true,
+  },
+});
+```
+
+#### 浏览器安全能力
+
+浏览器安全能力放在 `advancedConfig.security` 下，不属于指纹项。当前支持两个开关：
+
+- `disableExtensionManagement`
+  - 开启后，用户不能在浏览器里管理/移除扩展，也不能从本地安装扩展
+  - SDK 会把 `extension.disable = "1"` 写入加密后的 `launchKey`
+- `blockExtensionStoreAndSettings`
+  - 开启后，限制访问 Chrome Web Store 和扩展设置页面
+  - SDK 会把 `extension.disable = "1"` 写入加密后的 `launchKey`
+  - SDK 会在本次实例用户目录下生成黑名单文件，内容包含 `chromewebstore.google.com`
+  - SDK 写入 `launchKey` 的 `urls.black` 是黑名单文件路径的 base64，不是域名明文
+  - 如果业务已经传了 `advancedConfig.urls.black`，SDK 会解码该文件路径并向原黑名单文件追加 `chromewebstore.google.com`
+
+这两个能力最终都会通过 `--launch-key=<加密后的launchParam>` 传给内核，不会通过明文命令行参数下发。
+
+兼容说明：
+
+- `advancedConfig.extension.disable` 是历史底层开关，仍然兼容。
+- `advancedConfig.extension.disable` 和 `advancedConfig.security.disableExtensionManagement` 最终都会映射为 `extension.disable = "1"`。
+- 新接入业务建议使用 `advancedConfig.security.disableExtensionManagement`，语义更接近“禁止管理/移除扩展，以及禁止从本地安装扩展”。
+- `advancedConfig.extension.disable` 只等价于禁止扩展管理/本地安装，不会自动追加扩展商店黑名单；如需限制 Chrome Web Store 和扩展设置页面，请使用 `advancedConfig.security.blockExtensionStoreAndSettings`。
+- `advancedConfig.security.blockExtensionStoreAndSettings: true` 会强制下发 `extension.disable = "1"`；因此即使同时传 `disableExtensionManagement: false`，表现也会和两个字段都为 `true` 一样，扩展管理/本地安装也会被禁用。
+- 如果同时传入旧字段和新字段，SDK 会按开启处理，不会产生互相覆盖。
+
+示例：
+
+```javascript
+const fingerprint = await sdk.createFingerprint({
+  userAgent: 'Mozilla/5.0 ...',
+  advancedConfig: {
+    security: {
+      disableExtensionManagement: true,
+      blockExtensionStoreAndSettings: true,
+    },
   },
 });
 ```
