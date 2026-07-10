@@ -4,14 +4,15 @@
 
 ## 先记结论
 
-- `userAgent` 由业务方传完整字符串，SDK 不会自动生成，也不会帮你修正。
+- `userAgent` 建议由业务方传完整字符串，SDK 不会根据 `uaOs` / fonts / WebGL 自动生成匹配 UA，也不会帮你修正。
+- 如果业务不传 `userAgent`，SDK 会使用历史默认随机 UA 兜底；该兜底 UA 不保证与目标 OS、字体、WebGL、`platformVersion` 或内核版本一致，生产环境不建议依赖。
 - `fingerprint.platformVersion` 也由业务方传，SDK 只负责透传给内核参数 `platform.version`。
 - 如果业务站点会读取 Client Hint，仅修改 `userAgent` 可能不够，还需要同时关注 `platformVersion`。
 - 如果是 iOS 场景，重点通常是把 UA 传正确；iOS 上 Client Hint 能力有限，不要假设它和桌面端一致。
 
 ## SDK 做什么
 
-SDK 只做两件事：
+生产接入时，可以把 SDK 在 UA / Client Hint 上的职责理解为两件事：
 
 - 把 `userAgent` 原样透传到浏览器启动参数
 - 把 `fingerprint.platformVersion` 透传到内核启动参数 `platform.version`
@@ -21,6 +22,9 @@ SDK 不做这些事情：
 - 不自动推导系统版本
 - 不根据 UA 自动生成 `platformVersion`
 - 不自动检查 UA 和 `platformVersion` 是否匹配
+- 不根据 `uaOs`、字体或 WebGL 自动挑选一条匹配 UA
+
+兼容说明：如果业务完全不传 `userAgent`，SDK 会使用历史默认随机 UA 作为兜底，避免启动参数为空。这个兜底只用于兼容旧接入，不代表 SDK 已经具备 UA 自动匹配能力。
 
 ## 推荐传法
 
