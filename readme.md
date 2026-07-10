@@ -98,13 +98,15 @@ await sdk.initialize({
 #### 业务方最常用的 3 个参数
 
 - `userAgent`
-  由业务方传完整字符串，SDK 不会自动修改、拼接或纠正。
+  建议由业务方传完整字符串，SDK 不会根据 `uaOs` / fonts / WebGL 自动生成匹配 UA，也不会自动修改、拼接或纠正。
 - `fingerprint.platformVersion`
   只有目标站点会读取 Client Hint 时再传。SDK 只负责透传给内核参数 `platform.version`。
 - `proxy.ipInfo`
   只有你希望语言、时区、地理位置等信息跟随代理环境时再传。
 
 如果你只想尽快跑通，通常先关注 `userAgent` 即可；只有在目标站点会校验更细的环境信息时，再补 `platformVersion` 和 `proxy.ipInfo`。
+
+如果业务不传 `userAgent`，SDK 会使用历史默认随机 UA 兜底。这个兜底 UA 不会跟 `uaOs`、字体、WebGL 或当前内核版本自动对齐，生产环境不建议依赖。
 
 #### 最常见的两种传法
 
@@ -370,8 +372,8 @@ export interface FingerprintConfig {
   /** WebGL配置 */
   webgl?: {
     type: 'custom' | 'truth';
-    vendor?: string;
-    renderer?: string;
+    vendor?: string; // custom 模式必填，对应内核参数 webgl.vendor
+    renderer?: string; // custom 模式必填，对应内核参数 webgl.render
     adapterInfoArchitecture?: string; // WebGPU adapter architecture，对应内核参数 webgpu.arch
     adapterInfoVendor?: string; // WebGPU adapter vendor，对应内核参数 webgpu.vendor
   };
@@ -494,9 +496,72 @@ const fingerprint = await sdk.createFingerprint({
 });
 ```
 
+#### 随机字体工具函数
+
+SDK 提供 `getFonts` / `createRandomFontValue` 工具函数，用于按目标 OS 生成符合客户端规则的随机字体列表。SDK 不会在启动链路中擅自决定业务字体；业务方需要先调用工具函数拿到列表，再通过 `fingerprint.font` 的 `custom` 模式显式传入。
+
+规则：
+
+- 随机抽样池为 `common + 目标平台 unique`
+- 不传 `fontCount` 时，默认返回 `目标平台 minimum 字体集 + 随机 40-60 个额外字体`
+- 传入 `fontCount` 时，`fontCount` 只表示随机抽样数量，不是最终字体数量
+- 抽样后会强制补齐目标平台的 minimum 字体集
+- 最终结果会去重、过滤空值，并按客户端规则排序
+- `getFonts` 只接受 SDK 支持的 `OsType` 值，非法 OS 会抛错
+- `truth` 模式不生成字体列表，不读取内置字体数据，表示使用运行环境真实字体
+- 已有 `custom` 字体列表会被原样尊重，SDK 不会自动补齐 minimum set
+
+启动内核时，`custom` 字体列表不会直接塞进 `font.value`。SDK 会把字体列表写入实例目录下的文本文件，将文件绝对路径 base64 后写入 `font.list`；`font.value` 只是字体列表 hash，用于表达列表变化，不能替代 `font.list`。
+
+**建议：Chromium 环境如果业务方需要显式控制随机字体强度，`fontCount` 建议传 `80-100`。注意它不是最终数组长度；SDK 仍会补齐目标 OS 的 minimum 字体集，所以不同 OS 的最终字体数量会不同。**
+
+如果业务方要求所有 OS 的最终字体数量都至少达到 `80`，建议显式传入 `getFonts(os, 80)` 或更高值；默认策略依赖各 OS minimum 字体集大小，移动端平台的默认最终数量可能低于 `80`。
+
+单平台示例：
+
+```javascript
+const { createSDK, getFonts, OsType } = require('dic-browser-sdk');
+
+const sdk = createSDK();
+
+// 默认：Windows minimum 字体集 + 随机 40-60 个额外字体
+const fonts = getFonts(OsType.Windows);
+
+// 显式控制随机抽样数量：随机抽 90 个，再补齐 Windows minimum 字体集
+const strongerFonts = getFonts(OsType.Windows, 90);
+
+const { instanceId, fingerprintConfig } = await sdk.createFingerprint({
+  uaOs: OsType.Windows,
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...',
+  fingerprint: {
+    font: {
+      type: 'custom',
+      value: strongerFonts,
+    },
+  },
+});
+```
+
+多候选 OS 场景可以使用 `createRandomFontValue`：
+
+```javascript
+const { createRandomFontValue } = require('dic-browser-sdk');
+
+const fonts = createRandomFontValue({
+  os: {
+    windows: ['Windows 10', 'Windows 11'],
+    linux: ['Ubuntu'],
+  },
+  sampleSize: 80,
+});
+```
+
+更多说明见 [docs/font-randomization.md](./docs/font-randomization.md)。
+
 #### UA 与 platformVersion 说明
 
-- `userAgent` 由业务方传完整字符串，SDK 不会自动修改、拼接或纠正。
+- `userAgent` 建议由业务方传完整字符串，SDK 不会根据 `uaOs` / fonts / WebGL 自动生成匹配 UA，也不会自动修改、拼接或纠正。
+- 如果业务不传 `userAgent`，SDK 会使用历史默认随机 UA 兜底；该兜底 UA 不保证与目标 OS、字体、WebGL、`platformVersion` 或内核版本一致，生产环境不建议依赖。
 - `fingerprint.platformVersion` 由业务方按目标系统版本传入，SDK 只负责透传给内核的 `platform.version` 参数。
 - 建议 `chromiumPath` 对应的内核版本与 `userAgent` 中的 Chrome 主版本尽量保持一致。
 - 建议 `userAgent`、目标系统、`platformVersion` 三者保持一致，否则业务站点可能识别出环境不一致。
@@ -617,28 +682,75 @@ rtc: {
 }
 ```
 
-#### WebGPU metadata 说明
+#### WebGL 匹配信息工具函数
 
-如果业务方需要同时控制 WebGL 和 WebGPU adapter 信息，可以在 `webgl.type = 'custom'` 时传：
+SDK 提供 `getWebGLInfo` / `toWebGLFingerprint` 工具函数，用于按目标 OS 获取一组相互匹配的 WebGL manufacturer、WebGL renderer 和 WebGPU adapter metadata。SDK 不会在启动链路中擅自替业务方决定 WebGL；业务方需要先调用工具函数拿到匹配记录，再通过 `fingerprint.webgl` 的 `custom` 模式显式传入。
 
-- `fingerprint.webgl.vendor` -> 内核参数 `webgl.vendor`
-- `fingerprint.webgl.renderer` -> 内核参数 `webgl.render`
+规则：
+
+- `getWebGLInfo(os)` 只从目标 OS 的数据中随机返回一条完整记录
+- `getWebGLInfo(os, manufacturer)` 会在目标 OS + 指定 manufacturer 的候选记录里随机选择
+- manufacturer 使用精确匹配；建议先通过 `getWebGLManufacturers(os)` 查看支持值
+- 返回记录会保持 WebGL manufacturer、WebGL renderer、adapter vendor、adapter architecture 的原始匹配关系
+- `getWebGLInfo` 只接受 SDK 支持的 `OsType` 值，非法 OS 会抛错
+- 当前数据中 Windows / Mac 记录包含 adapter metadata；Linux / Android / iOS 记录没有 adapter metadata，`toWebGLFingerprint` 会自动省略这些空字段
+- `truth` 模式不下发 `webgl.vendor`、`webgl.render`、`webgpu.arch`、`webgpu.vendor`，表示使用运行环境真实 WebGL / adapter 行为
+
+正常使用场景下，业务只需要传 OS：
+
+```javascript
+const webglInfo = getWebGLInfo(OsType.Windows);
+```
+
+只有当业务已经明确希望限制显卡厂商时，才需要传第二个参数 `manufacturer`。比如业务画像已经确定为 Windows + AMD，或业务自己要控制 Intel / NVIDIA / AMD 的分布比例，可以先通过 `getWebGLManufacturers(os)` 查看可选值，再传给 `getWebGLInfo(os, manufacturer)`。
+
+推荐用法：
+
+```javascript
+const { createSDK, getWebGLInfo, toWebGLFingerprint, OsType } = require('dic-browser-sdk');
+
+const sdk = createSDK();
+
+const webglInfo = getWebGLInfo(OsType.Windows);
+
+const { instanceId, fingerprintConfig } = await sdk.createFingerprint({
+  uaOs: OsType.Windows,
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...',
+  fingerprint: {
+    webgl: toWebGLFingerprint(webglInfo),
+  },
+});
+```
+
+按 manufacturer 收窄候选池：
+
+```javascript
+const manufacturers = getWebGLManufacturers(OsType.Windows);
+// [ 'Google Inc. (AMD)', 'Google Inc. (Intel)', 'Google Inc. (NVIDIA)' ]
+
+const amdWebglInfo = getWebGLInfo(OsType.Windows, 'Google Inc. (AMD)');
+```
+
+如果业务方需要手动映射字段，可以在 `webgl.type = 'custom'` 时传：
+
+- `fingerprint.webgl.vendor` -> 内核参数 `webgl.vendor`，custom 模式必填
+- `fingerprint.webgl.renderer` -> 内核参数 `webgl.render`，custom 模式必填
 - `fingerprint.webgl.adapterInfoArchitecture` -> 内核参数 `webgpu.arch`
 - `fingerprint.webgl.adapterInfoVendor` -> 内核参数 `webgpu.vendor`
-
-这些字段由业务方按目标设备信息传入，SDK 只负责透传，不会自动推导。
 
 示例：
 
 ```javascript
 webgl: {
   type: 'custom',
-  vendor: 'Google Inc. (Intel Inc.)',
-  renderer: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0)',
-  adapterInfoArchitecture: 'gen-9',
-  adapterInfoVendor: 'intel',
+  vendor: webglInfo.webglManufacturer,
+  renderer: webglInfo.webglRender,
+  adapterInfoArchitecture: webglInfo.adapterInfoArchitecture,
+  adapterInfoVendor: webglInfo.adapterInfoVendor,
 }
 ```
+
+更多说明见 [docs/webgl-info.md](./docs/webgl-info.md)。
 
 ### 3. 浏览器实例管理
 
