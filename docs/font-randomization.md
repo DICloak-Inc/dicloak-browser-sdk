@@ -26,7 +26,7 @@ SDK 不会扫描运行机器系统字体，也不会联网获取字体数据。
 ## 单平台用法
 
 ```javascript
-const { createSDK, getFonts, OsType } = require('dic-browser-sdk');
+const { createSDK, getFonts, OsType } = require('general-sdk');
 
 const sdk = createSDK();
 
@@ -80,7 +80,7 @@ SDK 会先从 `common + Windows unique` 中随机抽取 `90` 个字体，再补�
 如果业务先给出多个候选 OS，再决定 UA，可以使用 `createRandomFontValue`，此时 SDK 会使用候选 OS 的平台并集：
 
 ```javascript
-const { createRandomFontValue } = require('dic-browser-sdk');
+const { createRandomFontValue } = require('general-sdk');
 
 const fonts = createRandomFontValue({
   os: {
