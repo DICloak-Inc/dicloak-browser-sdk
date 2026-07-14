@@ -34,7 +34,7 @@ SDK 不会扫描运行机器硬件，也不会联网获取 WebGL 数据。
 ## OS 维度用法
 
 ```javascript
-const { createSDK, getWebGLInfo, toWebGLFingerprint, OsType } = require('dic-browser-sdk');
+const { createSDK, getWebGLInfo, toWebGLFingerprint, OsType } = require('general-sdk');
 
 const sdk = createSDK();
 
@@ -75,7 +75,7 @@ const { instanceId, fingerprintConfig } = await sdk.createFingerprint({
 如果业务已经确定显卡厂商，可以把 `getWebGLManufacturers(os)` 返回的 manufacturer 原样传入：
 
 ```javascript
-const { getWebGLInfo, toWebGLFingerprint, OsType } = require('dic-browser-sdk');
+const { getWebGLInfo, toWebGLFingerprint, OsType } = require('general-sdk');
 
 const webglInfo = getWebGLInfo(OsType.Windows, 'Google Inc. (AMD)');
 
