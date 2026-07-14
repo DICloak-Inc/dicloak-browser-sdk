@@ -1,8 +1,8 @@
-# DIC Browser SDK 错误码参考文档
+# Browser SDK 错误码参考文档
 
 ## 📋 概述
 
-本文档详细介绍了DIC Browser SDK使用的标准错误码体系。错误码范围为 **5000-5999**，按功能模块进行分类，每个错误都包含详细的描述、严重性级别和解决方案。
+本文档详细介绍了Browser SDK使用的标准错误码体系。错误码范围为 **5000-5999**，按功能模块进行分类，每个错误都包含详细的描述、严重性级别和解决方案。
 
 ## 🔢 错误码结构
 
@@ -340,7 +340,7 @@
 try {
   await sdk.launch(options);
 } catch (error) {
-  if (error instanceof DICError) {
+  if (error instanceof SDKError) {
     console.log(`错误码: ${error.code}`);
     console.log(`错误消息: ${error.message}`);
     console.log(`严重性: ${error.errorInfo.severity}`);
@@ -354,19 +354,19 @@ try {
 try {
   // 执行操作
 } catch (error) {
-  if (error instanceof DICError) {
+  if (error instanceof SDKError) {
     switch (error.code) {
-      case DICErrorCode.NOT_INITIALIZED:
+      case SDKErrorCode.NOT_INITIALIZED:
         // 初始化SDK
         await sdk.initialize(config);
         break;
       
-      case DICErrorCode.PORT_ALREADY_IN_USE:
+      case SDKErrorCode.PORT_ALREADY_IN_USE:
         // 使用其他端口
         options.debugPort = 0; // 自动分配
         break;
       
-      case DICErrorCode.CHROMIUM_EXECUTABLE_NOT_FOUND:
+      case SDKErrorCode.CHROMIUM_EXECUTABLE_NOT_FOUND:
         // 提示用户安装Chromium
         showInstallChromiumDialog();
         break;
@@ -381,14 +381,14 @@ try {
 
 ### 3. 错误重试机制
 ```javascript
-import { ErrorUtils } from 'dic-browser-sdk';
+import { ErrorUtils, SDKError, SDKErrorCode } from 'general-sdk';
 
 async function retryableOperation(operation, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await operation();
     } catch (error) {
-      if (error instanceof DICError && ErrorUtils.isRetryable(error)) {
+      if (error instanceof SDKError && ErrorUtils.isRetryable(error)) {
         console.log(`重试第 ${i + 1} 次...`);
         await sleep(1000 * (i + 1)); // 延迟重试
         continue;
@@ -403,7 +403,7 @@ async function retryableOperation(operation, maxRetries = 3) {
 ### 4. 错误日志记录
 ```javascript
 function logError(error) {
-  if (error instanceof DICError) {
+  if (error instanceof SDKError) {
     const errorInfo = error.getFullInfo();
     
     console.log({
@@ -444,7 +444,7 @@ await sdk.initialize({
 
 // 监听错误事件
 sdk.on('error', (error) => {
-  if (error instanceof DICError) {
+  if (error instanceof SDKError) {
     console.log('SDK错误:', error.getFullInfo());
   }
 });
