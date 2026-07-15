@@ -36,7 +36,6 @@ async function main() {
   await sdk.initialize({
     key: 'Your usage sdk key', // sdk key 必须
     baseDir: path.join(__dirname, 'data'),
-    sourceDataDir: path.join(__dirname, 'source-data'), // 内核源数据模板路径
     logLevel: 'info',
   });
 
@@ -85,12 +84,14 @@ main().catch(console.error);
 await sdk.initialize({
   key: 'Your usage sdk key', // 必填
   baseDir: './browser-data', // 数据目录
-  sourceDataDir: './source-data', // 内核源数据模板路径，必填
+  sourceDataDir: './source-data', // 可选，仅用于新实例首次初始化
   chromiumPath: '/path/to/browser', // 可选，历史兼容字段；实际启动请在 launch 中传
   logLevel: 'info', // 日志级别
 });
 ```
 
+> `sourceDataDir` 可以不传。只有 `baseDir/instanceId` 不存在时，SDK 才会尝试复制非空的模板目录；实例目录已经存在时一律直接复用，不执行模板复制。模板未配置、不存在或为空时，由 Chromium 自行生成用户数据。
+>
 > 推荐在每次 `launch` 时显式传入 `chromiumPath`。初始化阶段的 `chromiumPath` 仅作为历史兼容配置保留，不作为多内核场景下的启动依据。
 
 ### 2. 指纹配置
