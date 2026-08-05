@@ -246,7 +246,7 @@ export interface ProxyProps {
 export interface AdvancedConfig {
   /** 是否恢复上次会话 */
   restoreLast?: 'enable' | 'disable';
-  /** Google 翻译默认目标语言，对应 profile Preferences.translate_recent_target */
+  /** Google 翻译默认目标语言代码，例如 ja、en */
   translateRecentTarget?: string;
   /** 浏览器安全能力配置 */
   security?: {
@@ -582,14 +582,9 @@ const fingerprint = await sdk.createFingerprint({
 });
 ```
 
-- SDK 在启动内核前把该值写入实例的 `Default/Preferences` 顶层字段 `translate_recent_target`。
-- 新 profile 没有 Preferences 时，这项翻译配置只预置类似 `{"translate_recent_target":"ja"}` 的 32 字节紧凑 JSON，而不是复制 `sourceDataDir` 资料模板；其他既有启动步骤仍可能准备 Cookie DB 等自身所需文件，其余 profile 数据由 Chromium 首次启动生成。
-- 每次启动传入该字段都会覆盖 profile 中的已有值；未传时不会调用翻译目标 updater，不会因为这项能力额外读取、创建或修改 Preferences。扩展修补等既有能力仍可能按原逻辑访问 Preferences。
-- 空字符串和纯空白字符串会在配置验证阶段被拒绝；写入值会去除首尾空白。
-- SDK 不内置容易过期的 Google 翻译语言白名单。业务方应传入目标内核支持的语言代码；不支持的值可能保留在 Preferences 中，但 Chromium 会忽略并使用自己的目标语言回退规则。
-- 该字段控制启动默认值，不是锁定策略。用户在运行期间手动修改或 Chrome Sync 更新都可能改变它；业务下次仍传参启动时，SDK 会再次写入业务值。
-- 同一 Node.js 进程内对同一 profile 的翻译偏好更新会串行执行；不支持多个进程或正在运行的 Chromium 同时写同一个 profile。
-- 它不修改 `fingerprint.acceptLang`（请求语言偏好）或 `fingerprint.lang`（浏览器界面语言），三者互不推导。
+- 未传入该参数时，保留当前 profile 原有的翻译语言设置。
+- 传入该参数后，浏览器启动时会默认选中指定的 Google 翻译目标语言。
+- 该参数只影响 Google 翻译的目标语言，不会修改浏览器界面语言或请求语言偏好。
 
 #### 禁止查看网站密码
 
