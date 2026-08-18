@@ -6,7 +6,9 @@
 
 ### 安装
 
-1.将 **dic-browser-sdk.zip** 解压在项目根目录下（或者你喜欢的其他任何地方），修改 package.json：
+#### 步骤 1：安装 SDK
+
+将 **dic-browser-sdk.zip** 解压在项目根目录下（或者你喜欢的其他任何地方），修改 package.json：
 
 ```bash
   "dependencies": {
@@ -14,22 +16,23 @@
   }
 ```
 
-2.安装 SDK 所需依赖（在你项目根目录中执行）
+#### 步骤 2：安装 SDK 所需依赖
+
+在你的项目根目录中执行：
 
 ```bash
 npm install
 ```
 
-3. **Ubuntu/Debian Linux 必须安装中文字体**
+#### 步骤 3：Ubuntu/Debian Linux 安装中文字体
 
-> [!IMPORTANT]
-> 在 Ubuntu、Debian 等使用 APT 的 Linux 系统上运行 SDK 和 Chromium 内核前，必须安装以下中文字体。未安装时，浏览器访问中文网页可能出现乱码。
+> **重要：** 在 Ubuntu、Debian 等使用 APT 的 Linux 系统上运行 SDK 和 Chromium 内核前，必须安装以下中文字体。未安装时，浏览器访问中文网页可能出现乱码。
 
 ```bash
 sudo apt install -y fonts-wqy-microhei fonts-wqy-zenhei fonts-noto-cjk ttf-wqy-zenhei
 ```
 
-4.完成
+#### 步骤 4：完成
 
 ### 基础使用
 
