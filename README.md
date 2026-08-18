@@ -20,7 +20,16 @@
 npm install
 ```
 
-3.完成
+3. **Ubuntu/Debian Linux 必须安装中文字体**
+
+> [!IMPORTANT]
+> 在 Ubuntu、Debian 等使用 APT 的 Linux 系统上运行 SDK 和 Chromium 内核前，必须安装以下中文字体。未安装时，浏览器访问中文网页可能出现乱码。
+
+```bash
+sudo apt install -y fonts-wqy-microhei fonts-wqy-zenhei fonts-noto-cjk ttf-wqy-zenhei
+```
+
+4.完成
 
 ### 基础使用
 
@@ -935,6 +944,30 @@ await sdk.initialize({
   logLevel: 'debug', // error, warn, info, debug
 });
 ```
+
+## 📤 仅发布文档（维护者）
+
+只更新 General SDK 的对外文档：
+
+```bash
+npm run publish:docs:general
+```
+
+只更新 DIC Browser SDK 的对外文档：
+
+```bash
+npm run publish:docs:dic
+```
+
+同时更新两套对外文档：
+
+```bash
+npm run publish:docs:all
+```
+
+发布命令会为目标 profile 渲染 README，并同步 README 中引用的全部 `docs/*.md`。每次都会处理完整关联文档集合，不根据本地 Git 修改状态筛选文件。
+
+GitHub Token 可以通过 `GITHUB_TOKEN`、`GH_TOKEN` 或被 Git 忽略的 `.env.local` 提供。这些命令不会构建 SDK，也不会创建或修改 GitHub Release、删除或上传 ZIP。
 
 ## 📄 许可证
 
