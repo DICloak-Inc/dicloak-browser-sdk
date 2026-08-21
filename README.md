@@ -914,7 +914,7 @@ await sdk.setStandardCookies(instanceId, cookies);
 注意事项：
 
 - 实例必须为关闭状态时操作。
-- 当前 SDK 支持多个内核版本（如 134 / 142 / 143）。跨内核版本迁移时，Cookie 存在兼容风险。
+- 当前 SDK 支持多个内核版本（如 134 / 142 / 143 / 150）。跨内核版本迁移时，Cookie 存在兼容风险。
 - SDK 会在启动前根据本次 `launch.chromiumPath` 识别目标内核版本，并自动检查 Cookie DB 表结构；不兼容时会替换为对应版本的空模板，再写入业务侧通过 SDK 暂存的 Cookie。
 - 对业务侧来说，这意味着旧版本内核下生成的本地 Cookie，在切换到新版本内核后，不建议默认认为一定还能原样延续。
 
