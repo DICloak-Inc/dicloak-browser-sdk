@@ -381,7 +381,7 @@ try {
 
 ### 3. 错误重试机制
 ```javascript
-import { ErrorUtils, SDKError, SDKErrorCode } from 'general-sdk';
+import { ErrorUtils, SDKError, SDKErrorCode } from 'dic-browser-sdk';
 
 async function retryableOperation(operation, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
