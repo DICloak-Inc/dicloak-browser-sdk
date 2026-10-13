@@ -597,7 +597,7 @@ const fonts = createRandomFontValue({
 
 #### 自建 Passkey 服务
 
-使用支持自建 Passkey 的配套内核时，业务方可以通过 `advancedConfig.passkey` 传入服务地址、用户 ID、session token，以及可选的自定义请求头和主密码：
+使用自建 Passkey 服务时，请使用支持该功能的配套浏览器，并在 `advancedConfig.passkey` 中填写服务地址、用户 ID、session token，以及可选的自定义请求头和主密码：
 
 ```javascript
 const { instanceId, fingerprintConfig } = await sdk.createFingerprint({
@@ -617,7 +617,7 @@ await sdk.launch({
 });
 ```
 
-SDK 将该对象按 `Base64(JSON)` 格式写入内核启动参数 `passkey`，并沿用现有加密 launch-key 流程。未配置时不下发该参数。字段说明、完整示例和内核要求见 [Passkey 参数指南](./docs/passkey.md)。
+`server`、`uid` 和 `token` 为必填字段，`headers` 和 `passphrase` 按服务要求配置。字段说明、使用条件和完整示例见 [Passkey 参数指南](./docs/passkey.md)。
 
 #### Google 翻译默认目标语言
 
