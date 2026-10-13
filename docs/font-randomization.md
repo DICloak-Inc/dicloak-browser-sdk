@@ -114,6 +114,8 @@ const fonts = createRandomFontValue({
 
 `font.value` 不是字体列表本身，也不能替代 `font.list`。内核需要通过 `font.list` 找到字体文件并读取完整列表。
 
+文件使用 `fs.writeFileSync(path, content, 'utf8')` 在 spawn 内核之前完成；以路径调用时，函数返回前已经完成打开、写入和关闭。内核需要在其进程权限范围内读取该文件；文件存在不代表每个受限子进程都具备读取权限。排障时应分别检查文件内容、路径编码、文件与目录权限以及内核读取位置。
+
 `truth` 模式不会写字体文件，也不会传 `font.list`。当前 SDK 为兼容旧参数结构，`truth` 下会把 `font.value` 置为空字符串。
 
 ## 边界
@@ -121,4 +123,5 @@ const fonts = createRandomFontValue({
 - `truth` 模式：SDK 不生成字体列表，不读取字体数据文件，表示使用运行环境真实字体。
 - `custom` 模式：SDK 尊重业务方传入的字体列表，不自动补齐 minimum set。
 - 历史环境、导入环境、已有 custom 字体列表不会被 SDK 自动修复。
+- SDK 不会为 custom 字体自行改变浏览器 sandbox 启动参数。
 - 随机字体能力只由 `getFonts` / `createRandomFontValue` 显式触发。
