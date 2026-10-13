@@ -257,7 +257,18 @@ export interface ProxyProps {
   ipInfo?: IpInfo;
 }
 
+/** 自建 Passkey 服务配置 */
+export interface PasskeyConfig {
+  server: string; // Passkey 服务器地址，不能为空
+  uid: string; // 用户 ID，不能为空
+  token: string; // Passkey 请求的 session token，不能为空
+  headers?: Record<string, string>; // 自定义请求头
+  passphrase?: string; // 主密码
+}
+
 export interface AdvancedConfig {
+  /** 自建 Passkey 服务配置 */
+  passkey?: PasskeyConfig;
   /** 是否恢复上次会话 */
   restoreLast?: 'enable' | 'disable';
   /** Google 翻译默认目标语言代码，例如 ja、en */
@@ -583,6 +594,30 @@ const fonts = createRandomFontValue({
 - 建议 `chromiumPath` 对应的内核版本与 `userAgent` 中的 Chrome 主版本尽量保持一致。
 - 建议 `userAgent`、目标系统、`platformVersion` 三者保持一致，否则业务站点可能识别出环境不一致。
 - iOS 场景通常重点是传正确的 UA；`platformVersion` 主要用于配合 Client Hint 场景。
+
+#### 自建 Passkey 服务
+
+使用支持自建 Passkey 的配套内核时，业务方可以通过 `advancedConfig.passkey` 传入服务地址、用户 ID、session token，以及可选的自定义请求头和主密码：
+
+```javascript
+const { instanceId, fingerprintConfig } = await sdk.createFingerprint({
+  advancedConfig: {
+    passkey: {
+      server: 'https://passkey.example.com',
+      uid: 'your-user-id',
+      token: 'your-session-token',
+    },
+  },
+});
+
+await sdk.launch({
+  instanceId,
+  fingerprintConfig: fingerprintConfig.config,
+  chromiumPath: '/path/to/browser',
+});
+```
+
+SDK 将该对象按 `Base64(JSON)` 格式写入内核启动参数 `passkey`，并沿用现有加密 launch-key 流程。未配置时不下发该参数。字段说明、完整示例和内核要求见 [Passkey 参数指南](./docs/passkey.md)。
 
 #### Google 翻译默认目标语言
 
